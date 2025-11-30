@@ -1,1 +1,25 @@
 # Testador de Memória para Arquitetura x86.
+
+## Depêndências (Para sistemas GNU/Linux baseados em Debian)
+
+### Utilitários Binários Básicos
+
+$ apt install binutils
+
+### Montador (Assembler)
+
+Como montador do projeto é utilizado o [NASM](https://www.nasm.us/)
+
+$ apt install nasm
+
+### Emulador de PC IA-32 (x86)
+
+Para o emulador de PC IA-32 (x86) é possível utilizar duas opções:
+
+#### 1. [QEMU](https://www.qemu.org/)
+
+$ apt install qemu-system-x86
+
+#### 2. [Bochs](https://bochs.sourceforge.io/)
+
+$ apt install bochs
