@@ -1,4 +1,4 @@
-# Testador de Memória para PC IA-32 (x86)
+# Testador de Memória para PC IA-32 (x86) Modo Real
 
 ## Depêndências
 
