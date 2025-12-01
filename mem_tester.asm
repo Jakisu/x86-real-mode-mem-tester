@@ -15,7 +15,7 @@
 	BDA_START			EQU	0x0400
 	BDA_END				EQU	0X04ff
 
-	;; Região de Memória Livre de Endereços Mais Baixos (30KB) - Primeira Região de Teste
+	;; Região de Memória Livre de Endereços Mais Baixos (30KB~) - Primeira Região de Teste
 	LOW_FREE_MEM_START 		EQU	0x0500
 	LOW_FREE_MEM_END		EQU	0x7bff
 
@@ -23,12 +23,14 @@
 	PROG_START			EQU	0x7c00
 	PROG_END			EQU	0x7dff
 
-	;; Região de Memória Livre de Endereços Mais Altos (608KB) - Segundo Região de Teste
+	;; Região de Memória Livre de Endereços Mais Altos (510KB~) - Segundo Região de Teste
 	HIGH_FREE_MEM_START		EQU	0x7e00
 	HIGH_FREE_MEM_END_LOW		EQU	0xffff
 
 	BIT_20_HIGH_FREE_MEM_START	EQU	0x10000
 	BIT_20_HIGH_FREE_MEM_END	EQU	0X7ffff
+
+	;; Endereços acima de 0x7FFFF são todos reservados para BIOS e Vídeo
 
 	;; Constantes de Controle
 	STR_ADDR_SIZE			EQU	5
@@ -38,7 +40,7 @@ start:
 .set_video:	
 	call set_video_mode
 
-.mem_layout:
+.show_mem_layout:
 	call display_mem_layout
 
 .animation:
@@ -93,8 +95,9 @@ start:
 	jmp .loop
 
 .end:
+	
 	jmp fim
-
+	
 	;; Rotina para imprimir a barra de progresso do teste
 	;; DEPENDÊNCIA: Utilizar set_cursor_position para dizer onde o cursor está
 display_progress_bar:
@@ -106,7 +109,7 @@ display_progress_bar:
 	cmp cl, 0
 	je .loop_end
 	
-	mov bx, 18
+	mov bx, 4
 	call delay
 	
 	mov ah, 0x0e
@@ -121,7 +124,7 @@ display_progress_bar:
 	ret
 
 	;; Rotina de Delay
-	;; (BX) - Deve conter a quantidade de ticks (18 ticks = 1 segundo)
+	;; (BX) - Deve conter a quantidade de ticks (18 ticks ~= 1 segundo)
 delay:
 	push cx
 	mov ah, 0x00
@@ -162,16 +165,14 @@ mem_test:
 	inc si
 	jmp .testing_aa
 
+.mem_error:
+
 .mem_test_end:
 	ret
-
-.mem_error:
-	;; implementar o caso de erro de memória
-	jmp fim
 	
 	;; Rotina que exibe o layout de memória
 display_mem_layout:	
-	mov ch, 4
+	mov ch, 5
 	mov si, addr1
 	
 .print_layout_pt1:
@@ -200,34 +201,21 @@ display_mem_layout:
 	jne .print_layout_pt1
 
 .print_layout_pt2:
-
-.init:
-	mov ch, STR_ADDR_SIZE
-	mov si, str_addr1	
-	mov dl, 2
 	
-.print:
-	cmp dl, 0
-	je .mem_layout_end
-	
+.print:	
 	mov bx, show_status
 	call print_string
 	
-	mov bx, si
+	mov bx, str_addr1
 	call print_addr
 
 	mov bx, space_between_addr
 	call print_string
 
-	add si, 5
-	mov bx, si
+	mov bx, str_addr2
 	call print_addr
 
-	add si, 5
 	call print_line_break
-	
-	dec dl
-	jmp .print
 
 .mem_layout_end:
 	ret
@@ -285,7 +273,7 @@ set_video_mode:
 	int 0x10
 	ret
 
-	;; Rotina para impressão de strings na tela em modo TTY (Teletype)
+	;; Rotina para impressão de uma string na tela em modo TTY (Teletype)
 	;; (BX) - Deve conter o endereço inicial da string
 print_string:
 	push ax
@@ -304,10 +292,6 @@ print_string:
 	pop bx
 	pop ax
 	ret
-
-	;; 0xA  4    8    F
-
-	;; 1010 0100 1000 1111
 
 	;; Rotina para imprimr um valor hexadecimal com máscara (0x0000)
 	;; (DX) - Deve conter o valor hexadecimal a ser impresso
@@ -344,7 +328,7 @@ print_hex:
 	mov bx, hex_out
 	call print_string
 
-	;; Zerar a máscara hex_out (0x0000)
+	;; Zerar a máscara hex_out (0x0000) com .zero_fill
 	mov cl, 4
 	mov bx, hex_out + 2
 	
@@ -384,7 +368,6 @@ fim:
 hex_out: 		db "0x0000", 0
 show_status:		db "[", 32, 32, 32, 32, 32, 32, 32, 32, "] ", 0
 space_between_addr:	db " - ", 0
-msg:			db "over!", 0
 
 	;; Endereços mais baixos
 addr1:			dw IVT_START
@@ -392,15 +375,13 @@ addr2:			dw BDA_START
 addr3:			dw LOW_FREE_MEM_START
 addr4:			dw PROG_START
 addr5:			dw HIGH_FREE_MEM_START
+addr6:			dw HIGH_FREE_MEM_END_LOW
 
 	;; Endereços mais altos
 str_addr1:		db "10000"
-str_addr2:		db "37DFF"
-str_addr3:		db "38000"
-str_addr4:		db "7FFFF"
+str_addr2:		db "7FFFF"
 
-
-	;; Definição que o tamanho do arquivo tenha exatos 512 bytes (tamanho de um setor)
+	;; Definição que o tamanho do arquivo de saída gerado pelo montador tenha exatos 512 bytes (tamanho de um setor)
 	;; E escrita da assinatura (0xaa55) para que a BIOS reconheça como bootável
 	times 510-($-$$) db 0
 	dw 0xaa55	
