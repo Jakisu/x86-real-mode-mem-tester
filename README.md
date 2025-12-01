@@ -4,17 +4,17 @@
 
 ### Para Sistemas GNU/Linux Baseados em Debian
 
-### Utilitários Binários Básicos
+### - Utilitários Binários Básicos
 
-$ apt install binutils
+$ apt install binutils make
 
-### Montador (Assembler)
+### - Montador (Assembler)
 
 Como montador do projeto é utilizado o [NASM](https://www.nasm.us/)
 
 $ apt install nasm
 
-### Emulador de PC IA-32 (x86)
+### - Emulador de PC IA-32 (x86)
 
 Para o emulador de PC IA-32 (x86) é possível utilizar duas opções:
 
@@ -32,10 +32,10 @@ $ apt install bochs
 
 ## Script Shell de Execução do Programa
 
-### Adicionar Permissão de Execução:
+### - Adicionar Permissão de Execução:
 
 $ chmod +x run.sh
 
-### Executar Script
+### - Executar Script
 
 $ ./run.sh
