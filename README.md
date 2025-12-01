@@ -1,6 +1,8 @@
-# Testador de Memória para Arquitetura x86.
+# Testador de Memória para PC IA-32 (x86)
 
-## Depêndências (Para sistemas GNU/Linux baseados em Debian)
+## Depêndências
+
+### Para Sistemas GNU/Linux Baseados em Debian
 
 ### Utilitários Binários Básicos
 
