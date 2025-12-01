@@ -2,34 +2,36 @@
 	bits 16
 
 	;; Definição de Constantes Simbólicas
-	LF			EQU	10
-	CR			EQU	13
-	SET_VIDEO_MODE		EQU	0x00
-	VIDEO_MODE_80_25_16C	EQU	0x03
+	LF				EQU	10
+	CR				EQU	13
+	SET_VIDEO_MODE			EQU	0x00
+	VIDEO_MODE_80_25_16C		EQU	0x03
 
 	;; IVT (Interrupt Vector Table) Vetor de Interrupção (1KB)
-	IVT_START		EQU	0x0000
-	IVT_END			EQU	0X03ff
+	IVT_START			EQU	0x0000
+	IVT_END				EQU	0X03ff
 
 	;; (BDA - BIOS Data Area) Área de Dados do BIOS (256 Bytes)
-	BDA_START		EQU	0x0400
-	BDA_END			EQU	0X04ff
+	BDA_START			EQU	0x0400
+	BDA_END				EQU	0X04ff
 
 	;; Região de Memória Livre de Endereços Mais Baixos (30KB) - Primeira Região de Teste
-	LOW_FREE_MEM_START 	EQU	0x0500
-	LOW_FREE_MEM_END	EQU	0x7bff
+	LOW_FREE_MEM_START 		EQU	0x0500
+	LOW_FREE_MEM_END		EQU	0x7bff
 
 	;; Região de Memória do Programa Testador (512 Bytes)
-	PROG_START		EQU	0x7c00
-	PROG_END		EQU	0x7dff
+	PROG_START			EQU	0x7c00
+	PROG_END			EQU	0x7dff
 
 	;; Região de Memória Livre de Endereços Mais Altos (608KB) - Segundo Região de Teste
-	HIGH_FREE_MEM_START	EQU	0x7e00
-	HIGH_FREE_MEM_END_LOW	EQU	0xffff
-	HIGH_FREE_MEM_END	EQU	0X9fbff
+	HIGH_FREE_MEM_START		EQU	0x7e00
+	HIGH_FREE_MEM_END_LOW		EQU	0xffff
+
+	BIT_20_HIGH_FREE_MEM_START	EQU	0x10000
+	BIT_20_HIGH_FREE_MEM_END	EQU	0X7ffff
 
 	;; Constantes de Controle
-	STR_ADDR_SIZE		EQU	5
+	STR_ADDR_SIZE			EQU	5
 	
 start:
 
@@ -47,9 +49,51 @@ start:
 	call set_cursor_position
 	call display_progress_bar
 	inc dh
-	cmp dh, 12
-	je fim
+	cmp dh, 6
+	je .mem_testing_16_bit
 	jmp .loop_animation
+
+.mem_testing_16_bit:
+	xor ax, ax
+	mov ds, ax
+
+	mov ax, HIGH_FREE_MEM_END_LOW
+	mov ss, ax 
+	mov sp, ss
+	
+	mov si, LOW_FREE_MEM_START
+	mov di, LOW_FREE_MEM_END
+	call mem_test
+
+	mov ax, LOW_FREE_MEM_END
+	mov ss, ax 
+	mov sp, ss
+
+	mov si, HIGH_FREE_MEM_START
+	mov di, HIGH_FREE_MEM_END_LOW
+	call mem_test
+
+.mem_testing_20_bit:
+
+.init:
+	mov cl, 7
+	mov dx, 0x1000
+	mov ax, dx
+.loop:
+	mov ds, ax
+	xor si, si
+	mov di, 0xffff
+	call mem_test
+	
+	add dx, 0x1000
+	mov ax, dx
+	dec cl
+	cmp cl, 0
+	je .end
+	jmp .loop
+
+.end:
+	jmp fim
 
 	;; Rotina para imprimir a barra de progresso do teste
 	;; DEPENDÊNCIA: Utilizar set_cursor_position para dizer onde o cursor está
@@ -97,13 +141,7 @@ delay:
 	;; (SI) - Deve apontar para endereço inicial
 	;; (DI) - Deve apontar para endereço final
 mem_test:	
-	jmp .testing_aa
 
-.loop:
-	cmp si, di
-	je .mem_test_end
-	inc si
-	
 .testing_aa:
 	mov al, 0xAA
 	mov [si], al
@@ -118,44 +156,20 @@ mem_test:
 	je .loop
 	call .mem_error
 	
+.loop:
+	cmp si, di
+	je .mem_test_end
+	inc si
+	jmp .testing_aa
+
 .mem_test_end:
-	jmp fim
+	ret
 
 .mem_error:
 	;; implementar o caso de erro de memória
-
-	;; Rotina que realiza o teste de memória nos endereços mais altos (Endereço > 0xFFFF (0x10000)
-	;; (SI) - Deve apontar para endereço inicial
-	;; (DI) - Deve apontar para endereço final
-mem_test_high_addr:	
-	jmp .testing_aa
-
-.loop:
-	cmp si, di
-	je .mem_test_end
-	inc si
-	
-.testing_aa:
-	mov al, 0xAA
-	mov [si], al
-	cmp [si], al
-	je .testing_55
-	call .mem_error
-
-.testing_55:
-	mov al, 0x55
-	mov [si], al
-	cmp [si], al
-	je .loop
-	call .mem_error
-
-.mem_test_end:
 	jmp fim
-
-.mem_error:
 	
-	
-	;; Rotina que exibe o layout de memória da máquina
+	;; Rotina que exibe o layout de memória
 display_mem_layout:	
 	mov ch, 4
 	mov si, addr1
@@ -189,8 +203,8 @@ display_mem_layout:
 
 .init:
 	mov ch, STR_ADDR_SIZE
-	mov si, str_addr1
-	mov dl, 8
+	mov si, str_addr1	
+	mov dl, 2
 	
 .print:
 	cmp dl, 0
@@ -362,7 +376,7 @@ print_hex:
 
 	;; Final do Programa
 fim:
-	jmp fim
+	jmp $
 
 	;; Variáveis Globais
 
@@ -370,6 +384,7 @@ fim:
 hex_out: 		db "0x0000", 0
 show_status:		db "[", 32, 32, 32, 32, 32, 32, 32, 32, "] ", 0
 space_between_addr:	db " - ", 0
+msg:			db "over!", 0
 
 	;; Endereços mais baixos
 addr1:			dw IVT_START
@@ -379,22 +394,11 @@ addr4:			dw PROG_START
 addr5:			dw HIGH_FREE_MEM_START
 
 	;; Endereços mais altos
-str_addr1:		db "07E00"
-str_addr2:		db "1BCFF"
-str_addr3:		db "1BD00"
-str_addr4:		db "2FBFF"
-str_addr5:		db "2FC00"
-str_addr6:		db "43AFF"
-str_addr7:		db "43B00"
-str_addr8:		db "579FF"
-str_addr9:		db "57A00"
-str_addr10:		db "6B8FF"
-str_addr11:		db "6B900"
-str_addr12:		db "7F7FF"
-str_addr13:		db "7F800"
-str_addr14:		db "936FF"
-str_addr15:		db "93700"
-str_addr16:		db "9FBFF"
+str_addr1:		db "10000"
+str_addr2:		db "37DFF"
+str_addr3:		db "38000"
+str_addr4:		db "7FFFF"
+
 
 	;; Definição que o tamanho do arquivo tenha exatos 512 bytes (tamanho de um setor)
 	;; E escrita da assinatura (0xaa55) para que a BIOS reconheça como bootável
