@@ -36,13 +36,28 @@
 	STR_ADDR_SIZE			EQU	5
 	
 start:
-
+	xor ax, ax
+	mov ds, ax
+	mov es, ax
+	
+	mov ax, HIGH_FREE_MEM_END_LOW
+	mov ss, ax 
+	mov sp, ss
+	
 .set_video:	
 	call set_video_mode
 
 .show_mem_layout:
 	call display_mem_layout
 
+	mov dh, 7
+	mov dl, 0
+	mov bh, 0
+	call set_cursor_position
+	
+	;; mov bx, exit
+	;; call print_string
+	
 .animation:
 	mov dh, 0
 	mov dl, 1
@@ -56,13 +71,6 @@ start:
 	jmp .loop_animation
 
 .mem_testing_16_bit:
-	xor ax, ax
-	mov ds, ax
-
-	mov ax, HIGH_FREE_MEM_END_LOW
-	mov ss, ax 
-	mov sp, ss
-	
 	mov si, LOW_FREE_MEM_START
 	mov di, LOW_FREE_MEM_END
 	call mem_test
@@ -91,12 +99,28 @@ start:
 	mov ax, dx
 	dec cl
 	cmp cl, 0
-	je .end
+	je .exit_msg
 	jmp .loop
 
+.exit_msg:
+	mov dh, 7
+	mov dl, 0
+	call set_cursor_position
+	xor ax, ax
+	mov ds, ax
+	mov al, [status_mem_error]
+	cmp al, 1
+	je .error
+.ok:
+	mov bx, msg_mem_ok
+	call print_string
+	jmp .end
+
+.error:
+	mov bx, msg_mem_error
+	call print_string
 .end:
-	
-	jmp fim
+	jmp $
 	
 	;; Rotina para imprimir a barra de progresso do teste
 	;; DEPENDÊNCIA: Utilizar set_cursor_position para dizer onde o cursor está
@@ -109,7 +133,7 @@ display_progress_bar:
 	cmp cl, 0
 	je .loop_end
 	
-	mov bx, 4
+	mov bx, 18
 	call delay
 	
 	mov ah, 0x0e
@@ -165,9 +189,11 @@ mem_test:
 	inc si
 	jmp .testing_aa
 
-.mem_error:
-
 .mem_test_end:
+	ret
+
+.mem_error:
+	mov es:[status_mem_error], 1
 	ret
 	
 	;; Rotina que exibe o layout de memória
@@ -276,9 +302,7 @@ set_video_mode:
 	;; Rotina para impressão de uma string na tela em modo TTY (Teletype)
 	;; (BX) - Deve conter o endereço inicial da string
 print_string:
-	push ax
 	push bx
-	pushf
 	mov ah, 0x0e
 .print:
 	mov al, [bx]
@@ -288,9 +312,7 @@ print_string:
 	inc bx
 	jmp .print
 .print_end:
-	popf
 	pop bx
-	pop ax
 	ret
 
 	;; Rotina para imprimr um valor hexadecimal com máscara (0x0000)
@@ -358,16 +380,17 @@ print_hex:
 	popa
 	ret
 
-	;; Final do Programa
-fim:
-	jmp $
-
 	;; Variáveis Globais
+
+	;; Variáveis de Controle
+status_mem_error:		db 0
 
 	;; Variáveis de exibição
 hex_out: 		db "0x0000", 0
 show_status:		db "[", 32, 32, 32, 32, 32, 32, 32, 32, "] ", 0
 space_between_addr:	db " - ", 0
+msg_mem_ok:		db "OK", 0
+msg_mem_error:		db "ERROR", 0
 
 	;; Endereços mais baixos
 addr1:			dw IVT_START
