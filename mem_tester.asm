@@ -106,7 +106,7 @@ display_progress_bar:
 	cmp cl, 0
 	je .loop_end
 	
-	mov bx, 4
+	mov bx, 18
 	call delay
 	
 	mov ah, 0x0e
