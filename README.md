@@ -30,6 +30,10 @@ Como alternativa o Bochs é melhor para depuração e desenvolvimento.
 
 $ apt install bochs
 
+## Build do Programa
+
+$ make -k
+
 ## Script Shell de Execução do Programa
 
 ### - Adicionar Permissão de Execução:
