@@ -2,7 +2,7 @@
 
 ## Depêndências
 
-### Para Sistemas GNU/Linux Baseados em Debian
+### Para Sistemas GNU/Linux Baseados em Debian:
 
 ### - Utilitários Binários Básicos
 
@@ -36,7 +36,7 @@ $ make -k
 
 ## Script Shell de Execução do Programa
 
-### - Adicionar Permissão de Execução:
+### - Adicionar Permissão de Execução
 
 $ chmod +x run.sh
 
